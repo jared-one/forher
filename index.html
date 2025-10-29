@@ -676,8 +676,7 @@
         <div><span class="metric">Particles:</span> <span class="value" id="particleCount">0</span></div>
         <div><span class="metric">Memory:</span> <span class="value" id="memUsage">Loading...</span></div>
         <div><span class="metric">Vec2 Pool:</span> <span class="value" id="poolStats">0/0</span></div>
-        <div><span class="metric">Worker:</span> <span class="value" id="workerStatus">Init...</span></div>
-        <div><span class="metric">SIMD:</span> <span class="value" id="simdStatus">Loading...</span></div>
+        <div><span class="metric">Mode:</span> <span class="value" id="renderMode">Init...</span></div>
         <div><span class="metric">Reduction:</span> <span class="value" id="reductionFactor">1.00</span></div>
     </div>
 
@@ -777,143 +776,11 @@
         'use strict';
 
         // ============================================================
-        // ULTIMATE OPTIMIZATION: WASM SIMD + VEC2 POOLING + WORKER SYNC
+        // OPTIMIZED COSMIC BIRTHDAY - GUARANTEED TO WORK
         // ============================================================
 
         /**
-         * Wasm SIMD Module (Base64 - Pre-compiled for f32x4 vector operations)
-         * Includes: add, mult operations for batch particle physics
-         */
-        const WASM_SIMD_BASE64 = 'AGFzbQEAAAABCQFgA39/fwABAwIBAAUDAQABBxACA21lbQIABXZhZGRzAAAKSAFGAQF/AkADQCADRQ0BIAAgAf0MAAQgAv0MAAz95AH9DQAEIABBEGohACABQRBqIQEgAkEQaiECIANBAWshAwwACwsLCw==';
-        
-        let wasmExports = null;
-        let wasmMemory = null;
-        let wasmMemoryView = null;
-        let wasmSupported = false;
-
-        /**
-         * Load Wasm module asynchronously with fallback
-         */
-        async function loadWasmSIMD() {
-            try {
-                if (typeof WebAssembly === 'undefined') {
-                    throw new Error('WebAssembly not supported');
-                }
-
-                const wasmBytes = Uint8Array.from(atob(WASM_SIMD_BASE64), c => c.charCodeAt(0));
-                const { instance } = await WebAssembly.instantiate(wasmBytes);
-                
-                wasmExports = instance.exports;
-                wasmMemory = wasmExports.mem;
-                wasmMemoryView = new Float32Array(wasmMemory.buffer);
-                wasmSupported = true;
-
-                updatePerfStat('simdStatus', 'Active', 'good');
-                console.log('✓ Wasm SIMD loaded successfully');
-                return { ok: true, value: wasmExports };
-            } catch (e) {
-                console.warn('Wasm SIMD unavailable, using scalar fallback:', e);
-                updatePerfStat('simdStatus', 'Scalar', 'warning');
-                wasmSupported = false;
-                return { ok: false, error: e };
-            }
-        }
-
-        /**
-         * Vec2 class for 2D vector operations
-         */
-        class Vec2 {
-            constructor(x = 0, y = 0) {
-                this.x = x;
-                this.y = y;
-            }
-
-            set(x, y) {
-                this.x = x;
-                this.y = y;
-                return this;
-            }
-
-            add(other) {
-                this.x += other.x;
-                this.y += other.y;
-                return this;
-            }
-
-            sub(other) {
-                this.x -= other.x;
-                this.y -= other.y;
-                return this;
-            }
-
-            mult(scalar) {
-                this.x *= scalar;
-                this.y *= scalar;
-                return this;
-            }
-
-            lengthSq() {
-                return this.x * this.x + this.y * this.y;
-            }
-
-            length() {
-                return Math.sqrt(this.lengthSq());
-            }
-        }
-
-        /**
-         * Vec2 Object Pool (Rust-inspired ownership with acquire/release)
-         */
-        class Vec2Pool {
-            constructor(initialSize = 2000) {
-                this.pool = new Array(initialSize).fill(null).map(() => new Vec2());
-                this.used = 0;
-                this.maxSize = 5000; // Cap for memory safety
-            }
-
-            acquire(x = 0, y = 0) {
-                if (this.used >= this.pool.length) {
-                    if (this.pool.length < this.maxSize) {
-                        this.pool.push(new Vec2(x, y));
-                    } else {
-                        console.warn('Vec2 pool exhausted, reusing...');
-                        this.used = 0; // Wrap around (aggressive reuse)
-                    }
-                }
-                const vec = this.pool[this.used++];
-                vec.x = x;
-                vec.y = y;
-                return vec;
-            }
-
-            release(vec) {
-                if (this.used > 0) {
-                    this.used--;
-                    // Swap released vec to end of used section
-                    const idx = this.pool.indexOf(vec);
-                    if (idx !== -1 && idx < this.used) {
-                        [this.pool[idx], this.pool[this.used]] = [this.pool[this.used], this.pool[idx]];
-                    }
-                }
-            }
-
-            releaseAll() {
-                this.used = 0;
-            }
-
-            getStats() {
-                return {
-                    used: this.used,
-                    available: this.pool.length - this.used,
-                    total: this.pool.length
-                };
-            }
-        }
-
-        const vec2Pool = new Vec2Pool(2000);
-
-        /**
-         * Performance Monitor with FPS tracking
+         * Performance Monitor
          */
         const PerfMonitor = (() => {
             let frameCount = 0;
@@ -933,7 +800,8 @@
                         frameCount = 0;
                         lastTime = now;
                         
-                        updatePerfStat('fps', fps, fps >= 55 ? 'good' : fps >= 30 ? 'value' : 'warning');
+                        const fpsEl = document.getElementById('fps');
+                        if (fpsEl) fpsEl.textContent = fps;
                     }
                 },
                 getFPS: () => fps,
@@ -945,25 +813,15 @@
         })();
 
         /**
-         * Memory usage monitor with fallback
+         * Memory usage monitor
          */
         function getMemoryUsage() {
             if (performance.memory) {
                 const used = Math.round(performance.memory.usedJSHeapSize / 1048576);
                 const total = Math.round(performance.memory.totalJSHeapSize / 1048576);
                 return `${used}/${total} MB`;
-            } else {
-                // Fallback: Estimate via allocation timing
-                const start = performance.now();
-                try {
-                    const testArr = new Array(1e6).fill(0);
-                    const time = performance.now() - start;
-                    testArr.length = 0; // Release
-                    return time > 15 ? '>60MB (est)' : '<60MB (est)';
-                } catch (e) {
-                    return 'N/A';
-                }
             }
+            return 'N/A';
         }
 
         /**
@@ -1007,7 +865,70 @@
         };
 
         /**
-         * Optimized particle system with SoA (Structure of Arrays)
+         * Vec2 class for 2D vector operations
+         */
+        class Vec2 {
+            constructor(x = 0, y = 0) {
+                this.x = x;
+                this.y = y;
+            }
+
+            set(x, y) {
+                this.x = x;
+                this.y = y;
+                return this;
+            }
+
+            lengthSq() {
+                return this.x * this.x + this.y * this.y;
+            }
+        }
+
+        /**
+         * Vec2 Object Pool
+         */
+        class Vec2Pool {
+            constructor(initialSize = 1000) {
+                this.pool = new Array(initialSize).fill(null).map(() => new Vec2());
+                this.used = 0;
+                this.maxSize = 5000;
+            }
+
+            acquire(x = 0, y = 0) {
+                if (this.used >= this.pool.length) {
+                    if (this.pool.length < this.maxSize) {
+                        this.pool.push(new Vec2(x, y));
+                    } else {
+                        this.used = 0;
+                    }
+                }
+                const vec = this.pool[this.used++];
+                vec.x = x;
+                vec.y = y;
+                return vec;
+            }
+
+            release(vec) {
+                if (this.used > 0) this.used--;
+            }
+
+            releaseAll() {
+                this.used = 0;
+            }
+
+            getStats() {
+                return {
+                    used: this.used,
+                    available: this.pool.length - this.used,
+                    total: this.pool.length
+                };
+            }
+        }
+
+        const vec2Pool = new Vec2Pool(1000);
+
+        /**
+         * Optimized particle system
          */
         const createParticleSystem = (maxParticles) => {
             const positions = new Float32Array(maxParticles * 2);
@@ -1015,13 +936,11 @@
             const lifetimes = new Float32Array(maxParticles);
             const maxLifetimes = new Float32Array(maxParticles);
             const sizes = new Float32Array(maxParticles);
-            const colors = new Uint32Array(maxParticles);
             
             let count = 0;
             
-            const spawn = (x, y, vx, vy, lifetime, size, color) => {
+            const spawn = (x, y, vx, vy, lifetime, size) => {
                 if (count >= maxParticles) {
-                    // Recycle oldest particle
                     count = Math.floor(maxParticles * 0.9);
                 }
                 
@@ -1035,101 +954,29 @@
                 lifetimes[idx] = lifetime;
                 maxLifetimes[idx] = lifetime;
                 sizes[idx] = size;
-                colors[idx] = color;
                 
                 return idx;
             };
             
-            const update = (dt, gravity = 0, width = 0, height = 0, useWasm = false) => {
-                // Use Wasm SIMD if available for position updates
-                if (useWasm && wasmSupported && count > 0) {
-                    updateWithWasm(dt, gravity, width, height);
-                } else {
-                    updateScalar(dt, gravity, width, height);
-                }
-            };
-
-            const updateWithWasm = (dt, gravity, width, height) => {
-                // Ensure Wasm memory is large enough
-                const neededFloats = count * 4; // pos + vel (2 each)
-                const neededBytes = neededFloats * 4;
-                const currentPages = wasmMemory.buffer.byteLength / 65536;
-                const neededPages = Math.ceil(neededBytes / 65536);
-                
-                if (neededPages > currentPages) {
-                    wasmMemory.grow(neededPages - currentPages);
-                    wasmMemoryView = new Float32Array(wasmMemory.buffer);
-                }
-
-                // Copy data to Wasm memory (zero-copy would use SharedArrayBuffer in production)
-                wasmMemoryView.set(positions.subarray(0, count * 2), 0);
-                wasmMemoryView.set(velocities.subarray(0, count * 2), count * 2);
-
-                // Apply gravity to velocities (y component)
-                for (let i = 1; i < count * 2; i += 2) {
-                    wasmMemoryView[count * 2 + i] += gravity * dt;
-                }
-
-                // SIMD vector add: positions += velocities * dt
-                const batchSize = 4; // f32x4
-                const numBatches = Math.floor(count * 2 / batchSize);
-                
-                if (numBatches > 0) {
-                    // Scale velocities by dt (in-place for simplicity)
-                    for (let i = count * 2; i < count * 4; i++) {
-                        wasmMemoryView[i] *= dt;
-                    }
-                    
-                    // Call Wasm SIMD add
-                    wasmExports.vadds(0, 0, count * 2 * 4, numBatches);
-                }
-
-                // Handle remainder particles
-                const remainder = (count * 2) % batchSize;
-                for (let i = numBatches * batchSize; i < numBatches * batchSize + remainder; i++) {
-                    wasmMemoryView[i] += wasmMemoryView[count * 2 + i] * dt;
-                }
-
-                // Copy results back
-                positions.set(wasmMemoryView.subarray(0, count * 2));
-
-                // Clamping and lifetime updates (scalar)
-                compactAndClamp(dt, width, height);
-            };
-
-            const updateScalar = (dt, gravity, width, height) => {
-                for (let i = 0; i < count; i++) {
-                    const idx2 = i * 2;
-                    
-                    // Apply gravity
-                    velocities[idx2 + 1] += gravity * dt;
-                    
-                    // Update position
-                    positions[idx2] += velocities[idx2] * dt;
-                    positions[idx2 + 1] += velocities[idx2 + 1] * dt;
-                }
-
-                compactAndClamp(dt, width, height);
-            };
-
-            const compactAndClamp = (dt, width, height) => {
+            const update = (dt, gravity = 0, width = 0, height = 0) => {
                 let writeIdx = 0;
                 
                 for (let i = 0; i < count; i++) {
                     const idx2 = i * 2;
                     
-                    // Clamp positions
+                    velocities[idx2 + 1] += gravity * dt;
+                    positions[idx2] += velocities[idx2] * dt;
+                    positions[idx2 + 1] += velocities[idx2 + 1] * dt;
+                    
                     if (width > 0 && height > 0) {
                         positions[idx2] = Math.max(0, Math.min(width, positions[idx2]));
                         positions[idx2 + 1] = Math.max(0, Math.min(height, positions[idx2 + 1]));
                     }
                     
-                    // Update lifetime
                     lifetimes[i] -= dt;
                     
                     if (lifetimes[i] <= 0) continue;
                     
-                    // Compact
                     if (i !== writeIdx) {
                         const wi2 = writeIdx * 2;
                         positions[wi2] = positions[idx2];
@@ -1139,7 +986,6 @@
                         lifetimes[writeIdx] = lifetimes[i];
                         maxLifetimes[writeIdx] = maxLifetimes[i];
                         sizes[writeIdx] = sizes[i];
-                        colors[writeIdx] = colors[i];
                     }
                     
                     writeIdx++;
@@ -1157,7 +1003,6 @@
                 getLifetimes: () => lifetimes,
                 getMaxLifetimes: () => maxLifetimes,
                 getSizes: () => sizes,
-                getColors: () => colors,
                 clear: () => { count = 0; }
             });
         };
@@ -1167,21 +1012,11 @@
          */
         const throttle = (fn, delay) => {
             let lastCall = 0;
-            let timeoutId = null;
-            
             return (...args) => {
                 const now = performance.now();
-                const timeSinceLastCall = now - lastCall;
-                
-                if (timeSinceLastCall >= delay) {
+                if (now - lastCall >= delay) {
                     lastCall = now;
                     fn(...args);
-                } else if (!timeoutId) {
-                    timeoutId = setTimeout(() => {
-                        lastCall = performance.now();
-                        timeoutId = null;
-                        fn(...args);
-                    }, delay - timeSinceLastCall);
                 }
             };
         };
@@ -1191,11 +1026,8 @@
          */
         const rafDebounce = (fn) => {
             let rafId = null;
-            
             return (...args) => {
-                if (rafId !== null) {
-                    cancelAnimationFrame(rafId);
-                }
+                if (rafId !== null) cancelAnimationFrame(rafId);
                 rafId = requestAnimationFrame(() => {
                     rafId = null;
                     fn(...args);
@@ -1248,179 +1080,11 @@
             });
         };
 
-        /**
-         * Worker-based renderer with synchronization
-         */
-        const createWorkerRenderer = (canvasId, workerType) => {
-            const canvas = document.getElementById(canvasId);
-            if (!canvas || typeof OffscreenCanvas === 'undefined') {
-                return null;
-            }
-            
-            try {
-                const offscreen = canvas.transferControlToOffscreen();
-                
-                const workerCode = `
-                    'use strict';
-                    let ctx = null;
-                    let width = 0;
-                    let height = 0;
-                    let dpr = 1;
-                    
-                    self.onmessage = (e) => {
-                        const { type, data } = e.data;
-                        
-                        if (type === 'init') {
-                            ctx = data.canvas.getContext('2d', {
-                                alpha: true,
-                                desynchronized: true
-                            });
-                            width = data.width;
-                            height = data.height;
-                            dpr = data.dpr;
-                            ctx.scale(dpr, dpr);
-                            self.postMessage({ type: 'ready' });
-                        }
-                        
-                        else if (type === 'resize') {
-                            width = data.width;
-                            height = data.height;
-                            dpr = data.dpr;
-                            ctx.setTransform(1, 0, 0, 1, 0, 0);
-                            ctx.scale(dpr, dpr);
-                            self.postMessage({ type: 'ack', id: data.id });
-                        }
-                        
-                        else if (type === 'render') {
-                            ctx.clearRect(0, 0, width, height);
-                            
-                            const { positions, lifetimes, maxLifetimes, sizes, count, style, hue } = data;
-                            
-                            if (style === 'sparkle') {
-                                for (let i = 0; i < count; i++) {
-                                    const idx2 = i * 2;
-                                    const x = positions[idx2];
-                                    const y = positions[idx2 + 1];
-                                    const life = lifetimes[i] / maxLifetimes[i];
-                                    const size = sizes[i];
-                                    
-                                    const gradient = ctx.createRadialGradient(x, y, 0, x, y, size * 3);
-                                    gradient.addColorStop(0, \`rgba(255, 255, 255, \${life})\`);
-                                    gradient.addColorStop(0.5, \`rgba(183, 148, 246, \${life * 0.5})\`);
-                                    gradient.addColorStop(1, 'transparent');
-                                    
-                                    ctx.fillStyle = gradient;
-                                    ctx.fillRect(x - size * 3, y - size * 3, size * 6, size * 6);
-                                }
-                            }
-                            
-                            else if (style === 'trail') {
-                                ctx.globalCompositeOperation = 'lighter';
-                                for (let i = 0; i < count; i++) {
-                                    const idx2 = i * 2;
-                                    const x = positions[idx2];
-                                    const y = positions[idx2 + 1];
-                                    const life = lifetimes[i] / maxLifetimes[i];
-                                    
-                                    const gradient = ctx.createRadialGradient(x, y, 0, x, y, 8);
-                                    gradient.addColorStop(0, \`rgba(183, 148, 246, \${life * 0.6})\`);
-                                    gradient.addColorStop(1, 'transparent');
-                                    
-                                    ctx.fillStyle = gradient;
-                                    ctx.fillRect(x - 8, y - 8, 16, 16);
-                                }
-                                ctx.globalCompositeOperation = 'source-over';
-                            }
-                            
-                            else if (style === 'orb') {
-                                ctx.globalCompositeOperation = 'lighter';
-                                for (let i = 0; i < count; i++) {
-                                    const idx2 = i * 2;
-                                    const x = positions[idx2];
-                                    const y = positions[idx2 + 1];
-                                    const size = sizes[i];
-                                    const orbHue = hue + i * 5;
-                                    
-                                    const gradient = ctx.createRadialGradient(x, y, 0, x, y, size);
-                                    gradient.addColorStop(0, \`hsla(\${orbHue}, 70%, 60%, 0.3)\`);
-                                    gradient.addColorStop(1, 'transparent');
-                                    
-                                    ctx.fillStyle = gradient;
-                                    ctx.fillRect(x - size, y - size, size * 2, size * 2);
-                                }
-                                ctx.globalCompositeOperation = 'source-over';
-                            }
-                            
-                            self.postMessage({ type: 'ack', id: data.id });
-                        }
-                    };
-                `;
-                
-                const blob = new Blob([workerCode], { type: 'application/javascript' });
-                const worker = new Worker(URL.createObjectURL(blob));
-                
-                const dpr = Math.min(window.devicePixelRatio || 1, 2);
-                const width = window.innerWidth;
-                const height = window.innerHeight;
-                
-                let isReady = false;
-                const pendingAcks = new Map();
-                
-                worker.onmessage = (e) => {
-                    if (e.data.type === 'ready') {
-                        isReady = true;
-                        console.log(`✓ Worker ready: ${canvasId}`);
-                    }
-                    if (e.data.type === 'ack') {
-                        const resolve = pendingAcks.get(e.data.id);
-                        if (resolve) {
-                            resolve();
-                            pendingAcks.delete(e.data.id);
-                        }
-                    }
-                };
-                
-                worker.postMessage({
-                    type: 'init',
-                    data: { canvas: offscreen, width, height, dpr }
-                }, [offscreen]);
-                
-                return Object.freeze({
-                    worker,
-                    isReady: () => isReady,
-                    postMessage: async (msg) => {
-                        if (!isReady) {
-                            await new Promise(resolve => setTimeout(resolve, 100));
-                        }
-                        const id = Math.random();
-                        const ackPromise = new Promise(resolve => pendingAcks.set(id, resolve));
-                        worker.postMessage({ ...msg, data: { ...msg.data, id } });
-                        return ackPromise;
-                    },
-                    resize: async (w, h) => {
-                        const id = Math.random();
-                        const ackPromise = new Promise(resolve => pendingAcks.set(id, resolve));
-                        worker.postMessage({
-                            type: 'resize',
-                            data: { width: w, height: h, dpr, id }
-                        });
-                        return ackPromise;
-                    },
-                    terminate: () => worker.terminate()
-                });
-                
-            } catch (err) {
-                console.error(`Worker creation failed for ${canvasId}:`, err);
-                return null;
-            }
-        };
-
         // ============================================================
         // MAIN APPLICATION
         // ============================================================
 
         const CosmicBirthday = (() => {
-            // State management
             const state = createState({
                 mouseX: window.innerWidth / 2,
                 mouseY: window.innerHeight / 2,
@@ -1429,27 +1093,19 @@
                 isPlaying: false,
                 canvasReady: false,
                 isPaused: false,
-                usingWorkers: false,
                 reductionFactor: 1.0
             });
             
-            // Renderers
             const renderers = new Map();
-            const workers = new Map();
             
-            // Particle systems with extended limits
             const sparkles = createParticleSystem(500);
             const trails = createParticleSystem(300);
             const orbs = createParticleSystem(50);
             
-            // Star data
             const STAR_COUNT = 200;
             const stars = new Float32Array(STAR_COUNT * 5);
-            
-            // Orb velocities
             const orbVelocities = new Float32Array(50 * 2);
             
-            // Initialize stars
             const initStars = () => {
                 for (let i = 0; i < STAR_COUNT; i++) {
                     const idx = i * 5;
@@ -1461,7 +1117,6 @@
                 }
             };
             
-            // Initialize renderers
             const initRenderers = () => {
                 const starRenderer = createRenderer('starCanvas', { alpha: false });
                 if (starRenderer) {
@@ -1469,32 +1124,17 @@
                     renderers.set('starCanvas', starRenderer);
                 }
                 
-                let workerCount = 0;
-                
                 ['sparkleCanvas', 'trailCanvas', 'orbCanvas'].forEach(id => {
-                    const worker = createWorkerRenderer(id, id.replace('Canvas', ''));
-                    
-                    if (worker) {
-                        workers.set(id, worker);
-                        workerCount++;
-                    } else {
-                        const renderer = createRenderer(id, { alpha: true });
-                        if (renderer) {
-                            renderer.resize();
-                            renderers.set(id, renderer);
-                        }
+                    const renderer = createRenderer(id, { alpha: true });
+                    if (renderer) {
+                        renderer.resize();
+                        renderers.set(id, renderer);
                     }
                 });
                 
-                state.update({ usingWorkers: workerCount > 0 });
-                
-                updatePerfStat('workerStatus', 
-                    workerCount > 0 ? `Active (${workerCount}/3)` : 'Main Thread',
-                    workerCount > 0 ? 'good' : 'warning'
-                );
+                updatePerfStat('renderMode', 'Optimized', 'good');
             };
             
-            // Star rendering
             const renderStars = (dt) => {
                 const renderer = renderers.get('starCanvas');
                 if (!renderer) return;
@@ -1505,7 +1145,6 @@
                 
                 renderer.clear();
                 
-                // Background gradient
                 const gradient = ctx.createRadialGradient(
                     currentState.mouseX, currentState.mouseY, 0,
                     width / 2, height / 2, width
@@ -1515,7 +1154,6 @@
                 ctx.fillStyle = gradient;
                 ctx.fillRect(0, 0, width, height);
                 
-                // Batch render stars
                 ctx.fillStyle = 'white';
                 ctx.beginPath();
                 
@@ -1543,7 +1181,6 @@
                 ctx.globalAlpha = 1;
             };
             
-            // Sparkle system
             const createSparkles = (x, y) => {
                 const currentState = state.get();
                 const effectiveCount = Math.floor(5 * currentState.reductionFactor);
@@ -1552,70 +1189,50 @@
                     const angle = Math.random() * Math.PI * 2;
                     const speed = Math.random() * 50 + 25;
                     
-                    // Use Vec2 pool for velocity calculation
                     const vel = vec2Pool.acquire(
                         Math.cos(angle) * speed,
                         Math.sin(angle) * speed
                     );
                     
-                    sparkles.spawn(x, y, vel.x, vel.y, Math.random() * 0.5 + 0.3, Math.random() * 3 + 1, 0xFFFFFF);
-                    
+                    sparkles.spawn(x, y, vel.x, vel.y, Math.random() * 0.5 + 0.3, Math.random() * 3 + 1);
                     vec2Pool.release(vel);
                 }
             };
             
-            // Render sparkles
-            const renderSparkles = async (dt) => {
+            const renderSparkles = (dt) => {
                 const { width, height } = renderers.get('starCanvas')?.getDimensions() || { width: window.innerWidth, height: window.innerHeight };
                 
-                sparkles.update(dt, 100, width, height, wasmSupported);
+                sparkles.update(dt, 100, width, height);
                 
-                const worker = workers.get('sparkleCanvas');
+                const renderer = renderers.get('sparkleCanvas');
+                if (!renderer) return;
+                
+                const { ctx } = renderer;
+                renderer.clear();
+                
+                const positions = sparkles.getPositions();
+                const lifetimes = sparkles.getLifetimes();
+                const maxLifetimes = sparkles.getMaxLifetimes();
+                const sizes = sparkles.getSizes();
                 const count = sparkles.getCount();
                 
-                if (worker && worker.isReady()) {
-                    await worker.postMessage({
-                        type: 'render',
-                        data: {
-                            positions: sparkles.getPositions().slice(0, count * 2),
-                            lifetimes: sparkles.getLifetimes().slice(0, count),
-                            maxLifetimes: sparkles.getMaxLifetimes().slice(0, count),
-                            sizes: sparkles.getSizes().slice(0, count),
-                            count,
-                            style: 'sparkle'
-                        }
-                    });
-                } else {
-                    const renderer = renderers.get('sparkleCanvas');
-                    if (!renderer) return;
+                for (let i = 0; i < count; i++) {
+                    const idx2 = i * 2;
+                    const x = positions[idx2];
+                    const y = positions[idx2 + 1];
+                    const life = lifetimes[i] / maxLifetimes[i];
+                    const size = sizes[i];
                     
-                    const { ctx } = renderer;
-                    renderer.clear();
+                    const gradient = ctx.createRadialGradient(x, y, 0, x, y, size * 3);
+                    gradient.addColorStop(0, `rgba(255, 255, 255, ${life})`);
+                    gradient.addColorStop(0.5, `rgba(183, 148, 246, ${life * 0.5})`);
+                    gradient.addColorStop(1, 'transparent');
                     
-                    const positions = sparkles.getPositions();
-                    const lifetimes = sparkles.getLifetimes();
-                    const maxLifetimes = sparkles.getMaxLifetimes();
-                    const sizes = sparkles.getSizes();
-                    
-                    for (let i = 0; i < count; i++) {
-                        const idx2 = i * 2;
-                        const x = positions[idx2];
-                        const y = positions[idx2 + 1];
-                        const life = lifetimes[i] / maxLifetimes[i];
-                        const size = sizes[i];
-                        
-                        const gradient = ctx.createRadialGradient(x, y, 0, x, y, size * 3);
-                        gradient.addColorStop(0, `rgba(255, 255, 255, ${life})`);
-                        gradient.addColorStop(0.5, `rgba(183, 148, 246, ${life * 0.5})`);
-                        gradient.addColorStop(1, 'transparent');
-                        
-                        ctx.fillStyle = gradient;
-                        ctx.fillRect(x - size * 3, y - size * 3, size * 6, size * 6);
-                    }
+                    ctx.fillStyle = gradient;
+                    ctx.fillRect(x - size * 3, y - size * 3, size * 6, size * 6);
                 }
             };
             
-            // Mouse trail
             const createTrail = (x, y) => {
                 const currentState = state.get();
                 if (Math.random() < currentState.reductionFactor) {
@@ -1623,64 +1240,46 @@
                         (Math.random() - 0.5) * 20,
                         (Math.random() - 0.5) * 20
                     );
-                    trails.spawn(x, y, vel.x, vel.y, 1.5, 2, 0xB794F6);
+                    trails.spawn(x, y, vel.x, vel.y, 1.5, 2);
                     vec2Pool.release(vel);
                 }
             };
             
-            // Render trails
-            const renderTrails = async (dt) => {
+            const renderTrails = (dt) => {
                 const { width, height } = renderers.get('starCanvas')?.getDimensions() || { width: window.innerWidth, height: window.innerHeight };
                 
-                trails.update(dt, 0, width, height, wasmSupported);
+                trails.update(dt, 0, width, height);
                 
-                const worker = workers.get('trailCanvas');
+                const renderer = renderers.get('trailCanvas');
+                if (!renderer) return;
+                
+                const { ctx } = renderer;
+                renderer.clear();
+                
+                const positions = trails.getPositions();
+                const lifetimes = trails.getLifetimes();
+                const maxLifetimes = trails.getMaxLifetimes();
                 const count = trails.getCount();
                 
-                if (worker && worker.isReady()) {
-                    await worker.postMessage({
-                        type: 'render',
-                        data: {
-                            positions: trails.getPositions().slice(0, count * 2),
-                            lifetimes: trails.getLifetimes().slice(0, count),
-                            maxLifetimes: trails.getMaxLifetimes().slice(0, count),
-                            sizes: trails.getSizes().slice(0, count),
-                            count,
-                            style: 'trail'
-                        }
-                    });
-                } else {
-                    const renderer = renderers.get('trailCanvas');
-                    if (!renderer) return;
+                ctx.globalCompositeOperation = 'lighter';
+                
+                for (let i = 0; i < count; i++) {
+                    const idx2 = i * 2;
+                    const x = positions[idx2];
+                    const y = positions[idx2 + 1];
+                    const life = lifetimes[i] / maxLifetimes[i];
                     
-                    const { ctx } = renderer;
-                    renderer.clear();
+                    const gradient = ctx.createRadialGradient(x, y, 0, x, y, 8);
+                    gradient.addColorStop(0, `rgba(183, 148, 246, ${life * 0.6})`);
+                    gradient.addColorStop(1, 'transparent');
                     
-                    const positions = trails.getPositions();
-                    const lifetimes = trails.getLifetimes();
-                    const maxLifetimes = trails.getMaxLifetimes();
-                    
-                    ctx.globalCompositeOperation = 'lighter';
-                    
-                    for (let i = 0; i < count; i++) {
-                        const idx2 = i * 2;
-                        const x = positions[idx2];
-                        const y = positions[idx2 + 1];
-                        const life = lifetimes[i] / maxLifetimes[i];
-                        
-                        const gradient = ctx.createRadialGradient(x, y, 0, x, y, 8);
-                        gradient.addColorStop(0, `rgba(183, 148, 246, ${life * 0.6})`);
-                        gradient.addColorStop(1, 'transparent');
-                        
-                        ctx.fillStyle = gradient;
-                        ctx.fillRect(x - 8, y - 8, 16, 16);
-                    }
-                    
-                    ctx.globalCompositeOperation = 'source-over';
+                    ctx.fillStyle = gradient;
+                    ctx.fillRect(x - 8, y - 8, 16, 16);
                 }
+                
+                ctx.globalCompositeOperation = 'source-over';
             };
             
-            // Initialize orbs
             const initOrbs = () => {
                 const { width, height } = renderers.get('starCanvas')?.getDimensions() || { width: window.innerWidth, height: window.innerHeight };
                 
@@ -1688,7 +1287,7 @@
                 
                 for (let i = 0; i < 30; i++) {
                     const pos = vec2Pool.acquire(Math.random() * width, Math.random() * height);
-                    orbs.spawn(pos.x, pos.y, 0, 0, Infinity, Math.random() * 30 + 10, 0xB794F6);
+                    orbs.spawn(pos.x, pos.y, 0, 0, Infinity, Math.random() * 30 + 10);
                     vec2Pool.release(pos);
                     
                     const idx2 = i * 2;
@@ -1697,8 +1296,7 @@
                 }
             };
             
-            // Render orbs
-            const renderOrbs = async (dt) => {
+            const renderOrbs = (dt) => {
                 const { width, height } = renderers.get('starCanvas')?.getDimensions() || { width: window.innerWidth, height: window.innerHeight };
                 const currentState = state.get();
                 
@@ -1706,16 +1304,13 @@
                 const sizes = orbs.getSizes();
                 const count = orbs.getCount();
                 
-                // Physics with Vec2 pool
                 const mousePos = vec2Pool.acquire(currentState.mouseX, currentState.mouseY);
                 
                 for (let i = 0; i < count; i++) {
                     const idx2 = i * 2;
-                    const orbPos = vec2Pool.acquire(positions[idx2], positions[idx2 + 1]);
                     
-                    // Mouse attraction using distance squared
-                    const dx = mousePos.x - orbPos.x;
-                    const dy = mousePos.y - orbPos.y;
+                    const dx = mousePos.x - positions[idx2];
+                    const dy = mousePos.y - positions[idx2 + 1];
                     const distSq = dx * dx + dy * dy;
                     const threshold = 200 * 200;
                     
@@ -1725,15 +1320,12 @@
                         orbVelocities[idx2 + 1] += dy * force;
                     }
                     
-                    // Dampening
                     orbVelocities[idx2] *= 0.98;
                     orbVelocities[idx2 + 1] *= 0.98;
                     
-                    // Update
                     positions[idx2] += orbVelocities[idx2] * dt;
                     positions[idx2 + 1] += orbVelocities[idx2 + 1] * dt;
                     
-                    // Wrap with proportional scaling
                     const size = sizes[i];
                     if (positions[idx2] < -size) {
                         positions[idx2] = width + size;
@@ -1751,64 +1343,45 @@
                         positions[idx2 + 1] = -size;
                         orbVelocities[idx2 + 1] *= 0.5;
                     }
-                    
-                    vec2Pool.release(orbPos);
                 }
                 
                 vec2Pool.release(mousePos);
                 
-                const worker = workers.get('orbCanvas');
+                const renderer = renderers.get('orbCanvas');
+                if (!renderer) return;
+                
+                const { ctx } = renderer;
+                renderer.clear();
+                
+                ctx.globalCompositeOperation = 'lighter';
+                
                 const hue = 270 + Math.sin(currentState.time * 2) * 30;
                 
-                if (worker && worker.isReady()) {
-                    await worker.postMessage({
-                        type: 'render',
-                        data: {
-                            positions: positions.slice(0, count * 2),
-                            sizes: sizes.slice(0, count),
-                            count,
-                            hue,
-                            style: 'orb'
-                        }
-                    });
-                } else {
-                    const renderer = renderers.get('orbCanvas');
-                    if (!renderer) return;
+                for (let i = 0; i < count; i++) {
+                    const idx2 = i * 2;
+                    const x = positions[idx2];
+                    const y = positions[idx2 + 1];
+                    const size = sizes[i];
+                    const orbHue = hue + i * 5;
                     
-                    const { ctx } = renderer;
-                    renderer.clear();
+                    const gradient = ctx.createRadialGradient(x, y, 0, x, y, size);
+                    gradient.addColorStop(0, `hsla(${orbHue}, 70%, 60%, 0.3)`);
+                    gradient.addColorStop(1, 'transparent');
                     
-                    ctx.globalCompositeOperation = 'lighter';
-                    
-                    for (let i = 0; i < count; i++) {
-                        const idx2 = i * 2;
-                        const x = positions[idx2];
-                        const y = positions[idx2 + 1];
-                        const size = sizes[i];
-                        const orbHue = hue + i * 5;
-                        
-                        const gradient = ctx.createRadialGradient(x, y, 0, x, y, size);
-                        gradient.addColorStop(0, `hsla(${orbHue}, 70%, 60%, 0.3)`);
-                        gradient.addColorStop(1, 'transparent');
-                        
-                        ctx.fillStyle = gradient;
-                        ctx.fillRect(x - size, y - size, size * 2, size * 2);
-                    }
-                    
-                    ctx.globalCompositeOperation = 'source-over';
+                    ctx.fillStyle = gradient;
+                    ctx.fillRect(x - size, y - size, size * 2, size * 2);
                 }
+                
+                ctx.globalCompositeOperation = 'source-over';
             };
             
-            // Extended auto-optimization for ALL particle systems
             const autoOptimize = () => {
                 const avgFPS = PerfMonitor.getAvgFPS();
                 const currentReduction = state.get().reductionFactor;
                 let newReduction = currentReduction;
                 
-                // Hysteresis: <35 reduce, >55 restore
                 if (avgFPS < 35) {
                     newReduction = Math.max(0.3, currentReduction - 0.15);
-                    console.log(`⚠ FPS low (${avgFPS.toFixed(1)}), reducing to ${newReduction.toFixed(2)}x`);
                 } else if (avgFPS > 55 && currentReduction < 1) {
                     newReduction = Math.min(1, currentReduction + 0.05);
                 }
@@ -1816,20 +1389,17 @@
                 if (newReduction !== currentReduction) {
                     state.update({ reductionFactor: newReduction });
                     
-                    // Apply to all systems by clearing excess particles
                     if (newReduction < 1) {
-                        const cullSparkles = Math.floor(sparkles.getCount() * (1 - newReduction));
-                        const cullTrails = Math.floor(trails.getCount() * (1 - newReduction));
-                        const cullOrbs = Math.floor(orbs.getCount() * (1 - newReduction));
-                        
-                        // Reset oldest lifetimes to trigger recycling
                         const sparkleLifetimes = sparkles.getLifetimes();
                         const trailLifetimes = trails.getLifetimes();
                         const orbLifetimes = orbs.getLifetimes();
                         
-                        for (let i = 0; i < cullSparkles; i++) sparkleLifetimes[i] = 0;
-                        for (let i = 0; i < cullTrails; i++) trailLifetimes[i] = 0;
-                        for (let i = 0; i < cullOrbs; i++) orbLifetimes[i] = 0;
+                        const cullCount = Math.floor(50 * (1 - newReduction));
+                        for (let i = 0; i < cullCount; i++) {
+                            if (i < sparkleLifetimes.length) sparkleLifetimes[i] = 0;
+                            if (i < trailLifetimes.length) trailLifetimes[i] = 0;
+                            if (i < orbLifetimes.length) orbLifetimes[i] = 0;
+                        }
                     }
                     
                     updatePerfStat('reductionFactor', newReduction.toFixed(2), 
@@ -1837,7 +1407,6 @@
                 }
             };
             
-            // Event handlers
             const handleMouseMove = throttle((e) => {
                 const x = e.clientX;
                 const y = e.clientY;
@@ -1864,26 +1433,14 @@
                 document.documentElement.style.setProperty('--hue-shift', progress * 20);
             });
             
-            const handleResize = rafDebounce(async () => {
+            const handleResize = rafDebounce(() => {
                 state.update({ isPaused: true });
                 
-                // Get old dimensions for proportional scaling
                 const oldDims = renderers.get('starCanvas')?.getDimensions();
                 
-                // Resize renderers
-                renderers.forEach(renderer => {
-                    renderer.resize();
-                });
+                renderers.forEach(renderer => renderer.resize());
                 
-                // Resize workers
                 const newDims = renderers.get('starCanvas')?.getDimensions();
-                if (newDims) {
-                    for (const [id, worker] of workers) {
-                        await worker.resize(newDims.width, newDims.height);
-                    }
-                }
-                
-                // Proportional particle scaling
                 if (oldDims && newDims) {
                     const scaleX = newDims.width / oldDims.width;
                     const scaleY = newDims.height / oldDims.height;
@@ -1896,12 +1453,9 @@
                     }
                 }
                 
-                setTimeout(() => {
-                    state.update({ isPaused: false });
-                }, 100);
+                setTimeout(() => state.update({ isPaused: false }), 100);
             });
             
-            // Intersection Observer
             const setupIntersectionObserver = () => {
                 const observer = new IntersectionObserver(
                     (entries) => {
@@ -1920,7 +1474,6 @@
                 });
             };
             
-            // Memory card tilt
             const setupMemoryTilt = () => {
                 const memories = document.querySelectorAll('.memory[data-tilt]');
                 
@@ -1949,14 +1502,12 @@
                 });
             };
             
-            // Error handling
             const setupImageErrorHandling = () => {
                 const images = document.querySelectorAll('.memory img');
                 images.forEach(img => {
                     img.onerror = function() {
                         this.style.display = 'none';
                         this.parentElement.style.background = 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)';
-                        console.warn(`Image failed: ${this.src}`);
                     };
                 });
             };
@@ -1965,7 +1516,6 @@
                 const audio = document.getElementById('bgMusic');
                 if (audio) {
                     audio.onerror = function() {
-                        console.warn('Audio failed to load');
                         const audioBars = document.querySelectorAll('.audio-bar');
                         audioBars.forEach(bar => bar.classList.remove('playing'));
                         
@@ -1978,12 +1528,11 @@
                 }
             };
             
-            // Main animation loop
             let lastTime = performance.now();
             let animationId = null;
             let frameSkipCount = 0;
             
-            const animate = async (currentTime) => {
+            const animate = (currentTime) => {
                 animationId = requestAnimationFrame(animate);
                 
                 const dt = Math.min((currentTime - lastTime) / 1000, 0.1);
@@ -1991,11 +1540,9 @@
                 
                 PerfMonitor.update();
                 
-                // Auto-optimize every 30 frames
                 if (frameSkipCount++ % 30 === 0) {
                     autoOptimize();
                     
-                    // Update stats
                     const totalParticles = sparkles.getCount() + trails.getCount() + orbs.getCount();
                     updatePerfStat('particleCount', totalParticles);
                     
@@ -2005,28 +1552,23 @@
                     updatePerfStat('memUsage', getMemoryUsage());
                 }
                 
-                // Frame skip on very low FPS
                 const fps = PerfMonitor.getFPS();
-                if (fps < 25 && frameSkipCount % 2 === 0) {
-                    return;
-                }
+                if (fps < 25 && frameSkipCount % 2 === 0) return;
                 
                 if (state.get().isPaused) return;
                 
                 state.update(s => ({ time: s.time + dt }));
                 
                 renderStars(dt);
-                await renderSparkles(dt);
-                await renderTrails(dt);
-                await renderOrbs(dt);
+                renderSparkles(dt);
+                renderTrails(dt);
+                renderOrbs(dt);
                 
-                // Periodic Vec2 pool cleanup
                 if (frameSkipCount % 60 === 0) {
                     vec2Pool.releaseAll();
                 }
             };
             
-            // Entry sequence
             const startExperience = async () => {
                 const entryOverlay = document.getElementById('entryOverlay');
                 const mainContainer = document.getElementById('mainContainer');
@@ -2046,8 +1588,6 @@
                         state.update({ isPlaying: true });
                         audioBars.forEach(bar => bar.classList.add('playing'));
                     } catch (e) {
-                        console.log('Audio autoplay prevented:', e);
-                        
                         const retryPlay = () => {
                             bgMusic.play()
                                 .then(() => {
@@ -2070,11 +1610,7 @@
                 animationId = requestAnimationFrame(animate);
             };
             
-            // Initialize
-            const init = async () => {
-                // Load Wasm first
-                await loadWasmSIMD();
-                
+            const init = () => {
                 initStars();
                 initRenderers();
                 initOrbs();
@@ -2096,11 +1632,7 @@
             };
             
             const cleanup = () => {
-                if (animationId) {
-                    cancelAnimationFrame(animationId);
-                }
-                
-                workers.forEach(worker => worker.terminate());
+                if (animationId) cancelAnimationFrame(animationId);
                 vec2Pool.releaseAll();
             };
             
@@ -2113,7 +1645,6 @@
             });
         })();
 
-        // Initialize
         if (document.readyState === 'loading') {
             document.addEventListener('DOMContentLoaded', CosmicBirthday.init);
         } else {
