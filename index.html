@@ -1,1 +1,1485 @@
 
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0, maximum-scale=1.0"
+    />
+    <title>A Birthday to My Lovely Girlfriend</title>
+    <style>
+        :root {
+            --cosmic-primary: #000428;
+            --cosmic-secondary: #004e92;
+            --cosmic-accent: #b794f6;
+            --cosmic-glow: #9f7aea;
+            --cosmic-text: #f0e6ff;
+            --scroll-progress: 0;
+            --mouse-x: 50%;
+            --mouse-y: 50%;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: linear-gradient(
+                180deg,
+                var(--cosmic-primary) 0%,
+                var(--cosmic-secondary)
+                    calc(100% - var(--scroll-progress) * 100%)
+            );
+            min-height: 100vh;
+            font-family: "Georgia", serif;
+            color: #ffffff;
+            overflow-x: hidden;
+            position: relative;
+        }
+
+        /* Entry Overlay */
+        .entry-overlay {
+            position: fixed;
+            inset: 0;
+            background: radial-gradient(
+                ellipse at var(--mouse-x) var(--mouse-y),
+                #1b2735 0%,
+                #090a0f 100%
+            );
+            z-index: 9999;
+            display: grid;
+            place-items: center;
+            transition: opacity 2s cubic-bezier(0.4, 0, 0, 1),
+                transform 2s cubic-bezier(0.4, 0, 0, 1);
+            will-change: opacity, transform;
+        }
+
+        .entry-overlay.hidden {
+            opacity: 0;
+            transform: scale(1.05);
+            pointer-events: none;
+        }
+
+        .entry-content {
+            text-align: center;
+            animation: breathe 4s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+        }
+
+        @keyframes breathe {
+            0%,
+            100% {
+                transform: translateY(0) scale(1);
+            }
+            50% {
+                transform: translateY(-15px) scale(1.02);
+            }
+        }
+
+        .entry-title {
+            font-size: clamp(1.5em, 4vw, 2.5em);
+            margin-bottom: 20px;
+            background: linear-gradient(
+                90deg,
+                var(--cosmic-text),
+                var(--cosmic-accent),
+                var(--cosmic-glow),
+                var(--cosmic-accent),
+                var(--cosmic-text)
+            );
+            background-size: 200% auto;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            animation: shimmer 3s linear infinite;
+            letter-spacing: 2px;
+        }
+
+        @keyframes shimmer {
+            to {
+                background-position: 200% center;
+            }
+        }
+
+        .entry-subtitle {
+            font-size: 1.2em;
+            color: rgba(255, 255, 255, 0.6);
+            margin-bottom: 40px;
+            font-style: italic;
+        }
+
+        .enter-button {
+            padding: 15px 40px;
+            font-size: 1.1em;
+            background: transparent;
+            border: 1px solid rgba(183, 148, 246, 0.3);
+            color: rgba(255, 255, 255, 0.8);
+            border-radius: 50px;
+            cursor: pointer;
+            position: relative;
+            overflow: hidden;
+            transition: all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+            backdrop-filter: blur(10px);
+        }
+
+        .enter-button::after {
+            content: "";
+            position: absolute;
+            inset: 0;
+            background: radial-gradient(
+                circle at var(--mouse-x) var(--mouse-y),
+                rgba(183, 148, 246, 0.2),
+                transparent 70%
+            );
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+
+        .enter-button:hover::after {
+            opacity: 1;
+        }
+
+        .enter-button:hover {
+            border-color: rgba(183, 148, 246, 0.6);
+            color: white;
+            transform: translateY(-2px);
+        }
+
+        /* Optimized Canvas Background */
+        #starCanvas {
+            position: fixed;
+            inset: 0;
+            z-index: -1;
+            opacity: 0;
+            transition: opacity 3s ease;
+        }
+
+        #starCanvas.visible {
+            opacity: 1;
+        }
+
+        /* Container */
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 40px 20px;
+            position: relative;
+            z-index: 10;
+            opacity: 0;
+            transform: translateY(30px);
+            transition: all 1.5s cubic-bezier(0.22, 1, 0.36, 1);
+        }
+
+        .container.visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        /* Header */
+        h1 {
+            font-size: clamp(1.8em, 5vw, 2.5em);
+            text-align: center;
+            margin-bottom: 30px;
+            background: linear-gradient(
+                135deg,
+                var(--cosmic-text),
+                var(--cosmic-accent),
+                var(--cosmic-glow)
+            );
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            filter: drop-shadow(0 0 30px rgba(159, 122, 234, 0.5));
+            line-height: 1.3;
+            opacity: 0;
+            animation: fadeInScale 1s forwards 0.5s;
+        }
+
+        @keyframes fadeInScale {
+            to {
+                opacity: 1;
+                transform: scale(1) translateY(0);
+            }
+            from {
+                opacity: 0;
+                transform: scale(0.9) translateY(20px);
+            }
+        }
+
+        /* Audio Container */
+        .audio-container {
+            text-align: center;
+            margin: 30px auto;
+            padding: 25px;
+            max-width: 500px;
+            background: linear-gradient(
+                135deg,
+                rgba(255, 255, 255, 0.02),
+                rgba(255, 255, 255, 0.05)
+            );
+            border-radius: 20px;
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            position: relative;
+            overflow: hidden;
+            opacity: 0;
+            animation: fadeInScale 1s forwards 0.7s;
+        }
+
+        .audio-container::before {
+            content: "";
+            position: absolute;
+            inset: -50%;
+            background: conic-gradient(
+                from 0deg at 50% 50%,
+                transparent,
+                var(--cosmic-accent),
+                transparent
+            );
+            animation: spin 20s linear infinite;
+            opacity: 0.05;
+        }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        .audio-label {
+            display: block;
+            margin-bottom: 5px;
+            color: var(--cosmic-accent);
+            font-style: italic;
+            font-size: 1.1em;
+            position: relative;
+            z-index: 1;
+        }
+
+        .audio-subtitle {
+            display: block;
+            margin-bottom: 15px;
+            color: rgba(255, 255, 255, 0.5);
+            font-size: 0.9em;
+            position: relative;
+            z-index: 1;
+        }
+
+        .audio-visual {
+            display: flex;
+            justify-content: center;
+            align-items: flex-end;
+            gap: 4px;
+            height: 40px;
+            margin: 20px 0;
+            position: relative;
+            z-index: 1;
+        }
+
+        .audio-bar {
+            width: 4px;
+            background: linear-gradient(to top, var(--cosmic-accent), var(--cosmic-glow));
+            border-radius: 2px;
+            transform-origin: bottom;
+            transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .audio-bar.playing {
+            animation: wave 1s ease-in-out infinite;
+        }
+
+        .audio-bar:nth-child(1) {
+            height: 35%;
+            animation-delay: 0ms;
+        }
+        .audio-bar:nth-child(2) {
+            height: 55%;
+            animation-delay: 100ms;
+        }
+        .audio-bar:nth-child(3) {
+            height: 45%;
+            animation-delay: 200ms;
+        }
+        .audio-bar:nth-child(4) {
+            height: 70%;
+            animation-delay: 300ms;
+        }
+        .audio-bar:nth-child(5) {
+            height: 50%;
+            animation-delay: 400ms;
+        }
+        .audio-bar:nth-child(6) {
+            height: 60%;
+            animation-delay: 500ms;
+        }
+        .audio-bar:nth-child(7) {
+            height: 40%;
+            animation-delay: 600ms;
+        }
+
+        @keyframes wave {
+            0%,
+            100% {
+                transform: scaleY(1);
+            }
+            50% {
+                transform: scaleY(1.5);
+            }
+        }
+
+        /* Memory Collage - Centered + Orbiting Trio */
+        .memories {
+            margin: 40px 0 60px;
+            display: grid;
+            place-items: center;
+            perspective: 1200px;
+        }
+
+        .collage {
+            position: relative;
+            width: min(92vw, 720px);
+            height: min(92vw, 720px);
+            display: grid;
+            place-items: center;
+            isolation: isolate;
+        }
+
+        .collage .memory.center {
+            width: min(46vw, 340px);
+            height: min(46vw, 340px);
+            border-radius: 20px;
+            overflow: hidden;
+            position: relative;
+            z-index: 1;
+            box-shadow: 0 20px 60px rgba(138, 43, 226, 0.35),
+                inset 0 1px 0 rgba(255, 255, 255, 0.1);
+            transform: translateZ(0);
+            border: 1px solid rgba(255, 255, 255, 0.12);
+        }
+
+        .memory.satellite {
+            position: absolute;
+            width: min(34vw, 220px);
+            height: min(34vw, 220px);
+            border-radius: 16px;
+            overflow: hidden;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 12px 30px rgba(138, 43, 226, 0.25),
+                inset 0 1px 0 rgba(255, 255, 255, 0.08);
+            transform: translateZ(0);
+            will-change: transform;
+        }
+
+        .memory.satellite::before {
+            content: "";
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(
+                135deg,
+                transparent 40%,
+                rgba(255, 255, 255, 0.1) 50%,
+                transparent 60%
+            );
+            transform: translateX(-100%);
+            transition: transform 0.6s;
+            z-index: 2;
+            pointer-events: none;
+        }
+
+        .memory.satellite:hover::before {
+            transform: translateX(100%);
+        }
+
+        /* Position satellites relative to center with responsive offsets */
+        .memory.satellite.a {
+            top: 6%;
+            left: 50%;
+            transform: translate(-50%, 0) translateZ(0);
+        }
+        .memory.satellite.b {
+            bottom: 6%;
+            left: 50%;
+            transform: translate(-50%, 0) translateZ(0);
+        }
+        .memory.satellite.c {
+            top: 50%;
+            left: 6%;
+            transform: translate(0, -50%) translateZ(0);
+        }
+
+        @media (min-width: 768px) {
+            .memory.satellite.a {
+                top: 4%;
+                left: 50%;
+                transform: translate(-50%, 0) translateZ(0);
+            }
+            .memory.satellite.b {
+                bottom: 4%;
+                left: 50%;
+                transform: translate(-50%, 0) translateZ(0);
+            }
+            .memory.satellite.c {
+                top: 50%;
+                left: 4%;
+                transform: translate(0, -50%) translateZ(0);
+            }
+        }
+
+        .memory img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            transition: transform 0.6s, filter 0.6s;
+            display: block;
+        }
+
+        .memory.center img {
+            filter: contrast(1.05) brightness(1.02) saturate(1.05);
+        }
+
+        .memory.satellite:hover {
+            transform: translateZ(30px) scale(1.02);
+        }
+        .memory.satellite:hover img {
+            transform: scale(1.05);
+            filter: brightness(1.05);
+        }
+
+        /* Poem Title */
+        h2 {
+            font-size: 1.8em;
+            text-align: center;
+            margin: 20px 0 30px;
+            color: var(--cosmic-text);
+            font-style: italic;
+            letter-spacing: 2px;
+            opacity: 0;
+            animation: fadeInScale 1s forwards 1.3s;
+        }
+
+        /* Letter */
+        .letter {
+            background: linear-gradient(
+                135deg,
+                rgba(255, 255, 255, 0.02),
+                rgba(255, 255, 255, 0.04)
+            );
+            border-radius: 25px;
+            padding: 50px;
+            margin: 30px 0;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3),
+                inset 0 1px 0 rgba(255, 255, 255, 0.05);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .letter::before {
+            content: "";
+            position: absolute;
+            inset: -100%;
+            background: radial-gradient(
+                circle at var(--mouse-x) var(--mouse-y),
+                rgba(138, 43, 226, 0.05),
+                transparent 50%
+            );
+            pointer-events: none;
+        }
+
+        .letter p {
+            line-height: 1.9;
+            margin-bottom: 25px;
+            font-size: 1.1em;
+            color: var(--cosmic-text);
+            position: relative;
+            z-index: 1;
+            opacity: 0;
+            transform: translateY(20px);
+        }
+
+        .letter.visible p {
+            animation: fadeUp 0.8s forwards;
+        }
+
+        @keyframes fadeUp {
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .letter p:nth-child(1) {
+            animation-delay: 0.1s;
+        }
+        .letter p:nth-child(2) {
+            animation-delay: 0.2s;
+        }
+        .letter p:nth-child(3) {
+            animation-delay: 0.3s;
+        }
+        .letter p:nth-child(4) {
+            animation-delay: 0.4s;
+        }
+        .letter p:nth-child(5) {
+            animation-delay: 0.5s;
+        }
+        .letter p:nth-child(6) {
+            animation-delay: 0.6s;
+        }
+        .letter p:nth-child(7) {
+            animation-delay: 0.7s;
+        }
+        .letter p:nth-child(8) {
+            animation-delay: 0.8s;
+        }
+
+        .letter em {
+            color: var(--cosmic-accent);
+            font-style: normal;
+            font-weight: 500;
+            transition: all 0.3s;
+        }
+
+        .letter em:hover {
+            color: white;
+            text-shadow: 0 0 20px var(--cosmic-accent);
+        }
+
+        /* Thank You */
+        .thank-you {
+            text-align: center;
+            font-size: 1.5em;
+            margin: 50px 0;
+            font-weight: bold;
+            background: linear-gradient(
+                90deg,
+                #ffd89b,
+                var(--cosmic-accent),
+                var(--cosmic-glow),
+                var(--cosmic-accent),
+                #ffd89b
+            );
+            background-size: 200% auto;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            animation: shimmer 4s linear infinite;
+            opacity: 0;
+        }
+
+        .thank-you.visible {
+            animation: fadeInScale 1s forwards, shimmer 4s linear infinite;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            h1 {
+                font-size: 1.5em;
+            }
+            .letter {
+                padding: 30px 20px;
+            }
+        }
+
+        /* Print Performance */
+        @media print {
+            * {
+                animation: none !important;
+            }
+        }
+
+        /* Reduce motion */
+        @media (prefers-reduced-motion: reduce) {
+            * {
+                animation-duration: 0.01ms !important;
+                animation-iteration-count: 1 !important;
+                transition-duration: 0.01ms !important;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Entry Overlay -->
+    <div class="entry-overlay" id="entryOverlay">
+        <div class="entry-content">
+            <h2 class="entry-title">A Birthday to My Lovely Girlfriend</h2>
+            <p class="entry-subtitle">One last dance among the cosmos</p>
+            <button class="enter-button">Enter & Listen</button>
+        </div>
+    </div>
+
+    <!-- Optimized Canvas for Stars -->
+    <canvas id="starCanvas"></canvas>
+
+    <div class="container" id="mainContainer">
+        <h1>A Birthday to the One I So Loved</h1>
+
+        <!-- Audio Player -->
+        <div class="audio-container">
+            <span class="audio-label">♪ Pisces - Tony Ann (Piano Cover) ♪</span>
+            <span class="audio-subtitle">From me to you, with all my love</span>
+            <div class="audio-visual" id="audioVisual">
+                <div class="audio-bar"></div>
+                <div class="audio-bar"></div>
+                <div class="audio-bar"></div>
+                <div class="audio-bar"></div>
+                <div class="audio-bar"></div>
+                <div class="audio-bar"></div>
+                <div class="audio-bar"></div>
+            </div>
+            <audio id="bgMusic" loop>
+                <source src="aisha/Pisces - Tony Ann (Piano Cover).mp3" type="audio/mpeg" />
+                Your browser does not support the audio element.
+            </audio>
+        </div>
+
+        <!-- Memory Collage: Center Image + 3 Satellites -->
+        <div class="memories">
+            <div class="collage" aria-label="A collage of cherished memories">
+                <!-- Center image -->
+                <div class="memory center">
+                    <img src="aisha/centre_image.png" alt="A cherished moment at the center" />
+                </div>
+                <!-- Satellites -->
+                <div class="memory satellite a">
+                    <img src="aisha/Screenshot 2025-10-29 125901.png" alt="Precious memory 1" />
+                </div>
+                <div class="memory satellite b">
+                    <img src="aisha/Screenshot 2025-10-29 130100.png" alt="Precious memory 2" />
+                </div>
+                <div class="memory satellite c">
+                    <img src="aisha/Screenshot 2025-10-29 130346.png" alt="Precious memory 3" />
+                </div>
+            </div>
+        </div>
+
+        <h2>To the One I Have So Loved</h2>
+
+        <div class="letter" id="letter">
+            <p>Aisha, the moment our lines crossed, a quiet constellation ignited. Your voice carried the hush of dawn, your laughter a gentle tide that pushed my days toward brighter shores. In a world that often moves too fast, you taught me the slow art of noticing — the soft way your name sits in my chest, the quiet certainty that whenever I drift, your light is the compass I return to.</p>
+
+            <p>What I admire in you is both radiant and steady: the way your kindness threads through every room you enter, the courage it takes to keep growing even when the path is unclear. Your smile makes space for honesty; your presence makes time feel kinder. You carry hope the way some people carry music — softly, insistently, so that even in noise we can still hear the melody.</p>
+
+            <p>On your birthday, I wish for you the kind of joy that arrives without permission — sudden and impossible to hide. I wish for you rooms full of laughter that surprise you, for days that feel lighter than they have any right to. I wish for good health that gives you momentum, for creative fire that keeps you curious, and for friendships that show up with open hands. And when the world tests your patience, may you remember how deeply you are valued.</p>
+
+            <p>To the person behind the brightest details — thank you for your patience, for your honesty, for the way you choose tenderness even when it's hard. Thank you for letting me witness your world. Thank you for the grace with which you love, and for how gracefully you allow yourself to be loved in return. You have been a home I did not know I needed, and I am grateful for the soft authority with which you carry your heart.</p>
+
+            <p>If ever the days ahead feel heavy, imagine this: a small signal, traveling regardless of distance, reminding you that you are remarkable. You are more than your lists and less than no one's version of you. You are allowed to take up space, to ask for what you need, to rest without earning it. I will always be quietly proud of the person you are becoming — not because you are perfect, but because you are real, and real is rarer than it seems.</p>
+
+            <p>On your birthday, I offer my love the way it has always been offered — freely, steadily, without conditions. I hope your cake is exactly sweet enough, your playlist full of songs that make the air feel softer, your pockets full of little excuses to smile. I hope you feel surrounded by good people and good energy, and that at the end of the day, your shoulders remember how to relax.</p>
+
+            <p>Aisha, you have made my life more beautiful just by being in it. May this year be generous to you — may it bring laughter that knocks the wind out of you, rest that actually restores, and adventures that feel like answers. May your courage find company in your calm, and may your kindness return to you tenfold, like light that has somewhere safe to land.</p>
+
+            <p>Happy birthday, with all my love. You are a rare gift — inside jokes with the universe, the kind of presence people talk about for years. I am grateful for you, proud of you, and excited for all that is still to come.</p>
+        </div>
+
+        <div class="thank-you" id="thankYou">Thank you, Aisha, for everything.</div>
+    </div>
+
+    <script>
+        "use strict";
+
+        // Worker code for particle rendering (OffscreenCanvas compatible)
+        const particleWorkerCode = `
+            let canvas, ctx, width, height, scale;
+            let particles = new Float32Array(10000 * 6);
+            let particleCount = 0;
+
+            self.onmessage = (e) => {
+                if (e.data.canvas) {
+                    canvas = e.data.canvas;
+                    ctx = canvas.getContext('2d');
+                    width = e.data.width;
+                    height = e.data.height;
+                    scale = e.data.scale;
+                    ctx.scale(scale, scale);
+                    requestAnimationFrame(render);
+                } else if (e.data.type === 'update') {
+                    particles = e.data.particles;
+                    particleCount = e.data.count;
+                } else if (e.data.type === 'resize') {
+                    width = e.data.width;
+                    height = e.data.height;
+                    scale = e.data.scale;
+                    canvas.width = width * scale;
+                    canvas.height = height * scale;
+                    ctx.scale(scale, scale);
+                }
+            };
+
+            function render() {
+                ctx.clearRect(0, 0, width, height);
+                
+                for(let i = 0; i < particleCount; i++) {
+                    const idx = i * 6;
+                    const x = particles[idx];
+                    const y = particles[idx + 1];
+                    const life = particles[idx + 4];
+                    const type = particles[idx + 5];
+
+                    ctx.globalAlpha = life;
+
+                    if (type === 0) {
+                        const gradient = ctx.createRadialGradient(x, y, 0, x, y, 5);
+                        gradient.addColorStop(0, 'rgba(183, 148, 246, 1)');
+                        gradient.addColorStop(1, 'rgba(183, 148, 246, 0)');
+                        ctx.fillStyle = gradient;
+                        ctx.fillRect(x - 5, y - 5, 10, 10);
+                    } else if (type === 1) {
+                        ctx.fillStyle = 'hsl(' + ((life * 360) % 360) + ', 80%, 60%)';
+                        ctx.beginPath();
+                        ctx.arc(x, y, 3, 0, Math.PI * 2);
+                        ctx.fill();
+                    } else {
+                        const gradient = ctx.createRadialGradient(x, y, 0, x, y, 10);
+                        gradient.addColorStop(0, 'rgba(200, 200, 200, 0.3)');
+                        gradient.addColorStop(1, 'rgba(200, 200, 200, 0)');
+                        ctx.fillStyle = gradient;
+                        ctx.fillRect(x - 10, y - 10, 20, 20);
+                    }
+                }
+                
+                ctx.globalAlpha = 1;
+                requestAnimationFrame(render);
+            }
+        `;
+
+        // AudioWorklet for Blow Detection (Rust-like safety: buffer copying avoided; typed arrays)
+        const audioWorkletCode = `
+            class BlowDetectorProcessor extends AudioWorkletProcessor {
+                constructor() {
+                    super();
+                    this.frameSize = 512;
+                    this.buffer = new Float32Array(this.frameSize);
+                    this.bufferIndex = 0;
+                    
+                    this.noiseFloor = 0;
+                    this.threshold = 0;
+                    this.calibrating = false;
+                    this.calibrationSamples = [];
+                    
+                    this.cooldown = 0;
+                    this.detectionFrames = 0;
+                    
+                    this.port.onmessage = (e) => {
+                        if (e.data.type === 'calibrate') {
+                            this.calibrating = true;
+                            this.calibrationSamples = [];
+                        } else if (e.data.type === 'setThreshold') {
+                            this.noiseFloor = e.data.noiseFloor;
+                            this.threshold = e.data.threshold;
+                            this.calibrating = false;
+                        }
+                    };
+                }
+                
+                calculateRMS(buffer) {
+                    let sum = 0;
+                    for (let i = 0; i < buffer.length; i++) {
+                        sum += buffer[i] * buffer[i];
+                    }
+                    return Math.sqrt(sum / buffer.length);
+                }
+                
+                calculateLowFreqEnergy(buffer) {
+                    let energy = 0;
+                    for (let i = 0; i < Math.min(10, buffer.length); i++) {
+                        energy += Math.abs(buffer[i]);
+                    }
+                    return energy;
+                }
+                
+                process(inputs, outputs) {
+                    const input = inputs[0];
+                    if (!input || !input[0]) return true;
+                    
+                    const samples = input[0];
+                    
+                    for (let i = 0; i < samples.length; i++) {
+                        this.buffer[this.bufferIndex++] = samples[i];
+                        
+                        if (this.bufferIndex >= this.frameSize) {
+                            const rms = this.calculateRMS(this.buffer);
+                            const lowEnergy = this.calculateLowFreqEnergy(this.buffer);
+                            
+                            if (this.calibrating) {
+                                this.calibrationSamples.push({rms, lowEnergy});
+                                
+                                this.port.postMessage({
+                                    type: 'calibrationData',
+                                    data: {rms, lowEnergy}
+                                });
+                            } else if (this.threshold > 0) {
+                                const energy = rms * 1000 + lowEnergy * 100;
+                                
+                                if (this.cooldown > 0) {
+                                    this.cooldown--;
+                                } else if (energy > this.threshold) {
+                                    this.detectionFrames++;
+                                    
+                                    if (this.detectionFrames > 2) {
+                                        this.port.postMessage({
+                                            type: 'blowDetected',
+                                            energy: energy
+                                        });
+                                        this.cooldown = 50;
+                                        this.detectionFrames = 0;
+                                    }
+                                } else {
+                                    this.detectionFrames = 0;
+                                }
+                                
+                                this.port.postMessage({
+                                    type: 'levels',
+                                    data: {rms, energy, threshold: this.threshold}
+                                });
+                            }
+                            
+                            this.bufferIndex = 0;
+                            this.buffer.fill(0);
+                        }
+                    }
+                    
+                    return true;
+                }
+            }
+            
+            registerProcessor('blow-detector', BlowDetectorProcessor);
+        `;
+
+        // Pure helpers for throttling, clamp, etc. (FP-first)
+        const throttle = (fn, delay) => {
+            let lastCall = 0;
+            return (...args) => {
+                const now = Date.now();
+                if (now - lastCall >= delay) {
+                    lastCall = now;
+                    return fn(...args);
+                }
+            };
+        };
+        const clamp01 = (n) => Math.max(0, Math.min(1, n));
+
+        // Particle System with FP-friendly API and Offscreen worker integration
+        const ParticleSystem = (() => {
+            const capacity = 10000;
+            const pool = {
+                pos: new Float32Array(capacity * 2),
+                vel: new Float32Array(capacity * 2),
+                life: new Float32Array(capacity),
+                type: new Uint8Array(capacity),
+                active: new Uint8Array(capacity),
+                count: 0
+            };
+
+            // Spawn pure function, returns count spawned
+            function spawn(x, y, count = 10, type = 0) {
+                const start = pool.count;
+                const end = Math.min(pool.count + count, capacity);
+                for (let i = start; i < end; i++) {
+                    const p2 = i * 2;
+                    pool.pos[p2] = x;
+                    pool.pos[p2 + 1] = y;
+                    pool.vel[p2] = (Math.random() - 0.5) * 10;
+                    pool.vel[p2 + 1] = (Math.random() - 0.5) * 10 - 5;
+                    pool.life[i] = 1;
+                    pool.type[i] = type;
+                    pool.active[i] = 1;
+                }
+                pool.count = end;
+                return end - start;
+            }
+
+            // Update pure function
+            function update(dt, mouseX, mouseY) {
+                for (let i = 0; i < pool.count; i++) {
+                    if (!pool.active[i]) continue;
+                    const p2 = i * 2;
+
+                    pool.pos[p2] += pool.vel[p2] * dt;
+                    pool.pos[p2 + 1] += pool.vel[p2 + 1] * dt;
+
+                    pool.vel[p2 + 1] += 300 * dt;
+
+                    const dx = mouseX - pool.pos[p2];
+                    const dy = mouseY - pool.pos[p2 + 1];
+                    const dist = Math.hypot(dx, dy);
+
+                    if (dist > 50 && dist < 300) {
+                        const force = 100 / (dist * dist);
+                        pool.vel[p2] += dx * force * dt;
+                        pool.vel[p2 + 1] += dy * force * dt;
+                    }
+
+                    pool.life[i] -= dt;
+                    if (pool.life[i] <= 0) {
+                        pool.active[i] = 0;
+                    }
+                }
+
+                // Compact the active particles (Rust-like swap-remove)
+                let writeIndex = 0;
+                for (let i = 0; i < pool.count; i++) {
+                    if (pool.active[i]) {
+                        if (i !== writeIndex) {
+                            const a = i * 2, b = writeIndex * 2;
+                            pool.pos[b] = pool.pos[a];
+                            pool.pos[b + 1] = pool.pos[a + 1];
+                            pool.vel[b] = pool.vel[a];
+                            pool.vel[b + 1] = pool.vel[a + 1];
+                            pool.life[writeIndex] = pool.life[i];
+                            pool.type[writeIndex] = pool.type[i];
+                            pool.active[writeIndex] = pool.active[i];
+                        }
+                        writeIndex++;
+                    }
+                }
+                pool.count = writeIndex;
+            }
+
+            // Read-only snapshot for worker transfer (zero-copy-ish via structured clone)
+            function snapshot() {
+                const out = new Float32Array(pool.count * 6);
+                for (let i = 0; i < pool.count; i++) {
+                    const p2 = i * 2;
+                    const idx = i * 6;
+                    out[idx] = pool.pos[p2];
+                    out[idx + 1] = pool.pos[p2 + 1];
+                    out[idx + 2] = pool.vel[p2];
+                    out[idx + 3] = pool.vel[p2 + 1];
+                    out[idx + 4] = pool.life[i];
+                    out[idx + 5] = pool.type[i];
+                }
+                return { data: out, count: pool.count };
+            }
+
+            return { spawn, update, snapshot, get count() { return pool.count; } };
+        })();
+
+        // Cosmic Experience optimized with functional state + Offscreen rendering + AudioWorklet
+        const CosmicExperience = (() => {
+            // State in a single Map (safe, immutable patterns via pure functions)
+            const state = new Map([
+                ["mouseX", 0.5],
+                ["mouseY", 0.5],
+                ["scrollProgress", 0],
+                ["isPlaying", false],
+                ["offscreenSupported", !!window.OffscreenCanvas]
+            ]);
+
+            // Star data using TypedArray for speed
+            const starCount = 200;
+            const starData = new Float32Array(starCount * 5); // x, y, size, speed, phase
+
+            const initStars = () => {
+                for (let i = 0; i < starCount; i++) {
+                    const idx = i * 5;
+                    starData[idx] = Math.random(); // x
+                    starData[idx + 1] = Math.random(); // y
+                    starData[idx + 2] = Math.random() * 2 + 0.5; // size
+                    starData[idx + 3] = Math.random() * 0.0005 + 0.0001; // speed
+                    starData[idx + 4] = Math.random() * Math.PI * 2; // phase
+                }
+            };
+
+            const setupCanvas = () => {
+                const canvas = document.getElementById("starCanvas");
+                const ctx = canvas.getContext("2d", {
+                    alpha: true,
+                    desynchronized: true
+                });
+
+                const resize = () => {
+                    canvas.width = window.innerWidth;
+                    canvas.height = window.innerHeight;
+                };
+
+                resize();
+                window.addEventListener("resize", resize, { passive: true });
+
+                return { canvas, ctx };
+            };
+
+            // Optimized render loop using rAF
+            const render = (ctx, canvas) => {
+                let animationId;
+                let lastTime = 0;
+                const targetFPS = 60;
+                const frameInterval = 1000 / targetFPS;
+
+                const draw = (currentTime) => {
+                    animationId = requestAnimationFrame(draw);
+
+                    const deltaTime = currentTime - lastTime;
+                    if (deltaTime < frameInterval) return;
+                    lastTime = currentTime - (deltaTime % frameInterval);
+
+                    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+                    // Render stars
+                    const scrollProg = state.get("scrollProgress");
+                    ctx.fillStyle = "white";
+
+                    for (let i = 0; i < starCount; i++) {
+                        const idx = i * 5;
+                        const x = starData[idx] * canvas.width;
+                        const y = starData[idx + 1] * canvas.height;
+                        const size = starData[idx + 2];
+                        const phase = starData[idx + 4];
+
+                        const parallax = size > 1 ? 0.5 : 0.3;
+                        const offsetX =
+                            (state.get("mouseX") - 0.5) * parallax * 50;
+                        const offsetY =
+                            (state.get("mouseY") - 0.5) * parallax * 50;
+
+                        const brightness = Math.sin(phase) * 0.5 + 0.5;
+                        ctx.globalAlpha = brightness * 0.8 + 0.2;
+
+                        ctx.beginPath();
+                        ctx.arc(x + offsetX, y + offsetY, size, 0, Math.PI * 2);
+                        ctx.fill();
+
+                        // Update phase
+                        starData[idx + 4] += starData[idx + 3] * deltaTime;
+                    }
+                    ctx.globalAlpha = 1;
+                };
+
+                animationId = requestAnimationFrame(draw);
+                return () => cancelAnimationFrame(animationId);
+            };
+
+            // Event handlers: throttled mouse + RAF scroll
+            const handleMouseMove = throttle((e) => {
+                const nx = clamp01(e.clientX / window.innerWidth);
+                const ny = clamp01(e.clientY / window.innerHeight);
+                state.set("mouseX", nx);
+                state.set("mouseY", ny);
+
+                document.documentElement.style.setProperty(
+                    "--mouse-x",
+                    `${nx * 100}%`
+                );
+                document.documentElement.style.setProperty(
+                    "--mouse-y",
+                    `${ny * 100}%`
+                );
+            }, 16);
+
+            const handleScroll = (() => {
+                let ticking = false;
+                return () => {
+                    if (!ticking) {
+                        requestAnimationFrame(() => {
+                            const scrolled = window.pageYOffset;
+                            const maxScroll =
+                                document.documentElement.scrollHeight -
+                                window.innerHeight;
+                            const progress = clamp01(scrolled / maxScroll);
+
+                            state.set("scrollProgress", progress);
+                            document.documentElement.style.setProperty(
+                                "--scroll-progress",
+                                progress
+                            );
+
+                            // Update background color via HSL to reduce layout
+                            document.body.style.background = `
+                                linear-gradient(
+                                    180deg,
+                                    hsl(${223 + progress * 20}, ${
+                                100 - progress * 20
+                            }%, ${8 + progress * 5}%) 0%,
+                                    hsl(${209 - progress * 10}, ${
+                                100 - progress * 30
+                            }%, ${29 + progress * 10}%) 100%
+                                )
+                            `;
+
+                            ticking = false;
+                        });
+                        ticking = true;
+                    }
+                };
+            })();
+
+            // Intersection Observer for animation triggers (safe and performant)
+            const setupIntersectionObserver = () => {
+                const observer = new IntersectionObserver(
+                    (entries) => {
+                        for (const entry of entries) {
+                            if (entry.isIntersecting) {
+                                entry.target.classList.add("visible");
+                            }
+                        }
+                    },
+                    { threshold: [0.1, 0.5], rootMargin: "0px" }
+                );
+
+                ["#letter", "#thankYou"].forEach((sel) => {
+                    const el = document.querySelector(sel);
+                    if (el) observer.observe(el);
+                });
+            };
+
+            const setupParticlesWorker = (canvas) => {
+                try {
+                    if (
+                        window.OffscreenCanvas &&
+                        typeof canvas.transferControlToOffscreen === "function"
+                    ) {
+                        // Resize for DPR before transfer
+                        canvas.width =
+                            window.innerWidth * window.devicePixelRatio;
+                        canvas.height =
+                            window.innerHeight * window.devicePixelRatio;
+                        canvas.style.width = window.innerWidth + "px";
+                        canvas.style.height = window.innerHeight + "px";
+
+                        const offscreen = canvas.transferControlToOffscreen();
+
+                        const worker = new Worker(
+                            URL.createObjectURL(
+                                new Blob([particleWorkerCode], {
+                                    type: "application/javascript"
+                                })
+                            )
+                        );
+
+                        worker.postMessage(
+                            {
+                                canvas: offscreen,
+                                width: window.innerWidth,
+                                height: window.innerHeight,
+                                scale: window.devicePixelRatio
+                            },
+                            [offscreen]
+                        );
+
+                        return worker;
+                    }
+                } catch (e) {
+                    console.warn(
+                        "OffscreenCanvas initialization failed; falling back:",
+                        e
+                    );
+                }
+                return null;
+            };
+
+            // AudioWorklet setup for blow detection
+            const setupBlowDetector = async () => {
+                const ctx = new (window.AudioContext ||
+                    window.webkitAudioContext)();
+                const blob = new Blob([audioWorkletCode], {
+                    type: "application/javascript"
+                });
+                const url = URL.createObjectURL(blob);
+                await ctx.audioWorklet.addModule(url);
+                const stream = await navigator.mediaDevices.getUserMedia({
+                    audio: true
+                });
+                const source = ctx.createMediaStreamSource(stream);
+                const node = new AudioWorkletNode(ctx, "blow-detector");
+                source.connect(node);
+                node.connect(ctx.destination); // required by some browsers
+
+                return { ctx, node };
+            };
+
+            const init = async () => {
+                initStars();
+                const { canvas, ctx } = setupCanvas();
+
+                // Start loop right away for smoothness (canvas is hidden initially)
+                const stopRender = render(ctx, canvas);
+
+                // Entry interaction
+                const entryOverlay = document.getElementById("entryOverlay");
+                const mainContainer = document.getElementById("mainContainer");
+                const starCanvas = document.getElementById("starCanvas");
+                const bgMusic = document.getElementById("bgMusic");
+                const audioBars = document.querySelectorAll(".audio-bar");
+
+                // Setup particles worker (if available)
+                const particleWorker = setupParticlesWorker(starCanvas);
+
+                // Prepare blow detector but don't activate until user clicks
+                let blow = { ctx: null, node: null };
+
+                entryOverlay.addEventListener("click", async () => {
+                    // Reveal visuals
+                    entryOverlay.classList.add("hidden");
+                    starCanvas.classList.add("visible");
+
+                    // Start music
+                    try {
+                        await bgMusic.play();
+                        state.set("isPlaying", true);
+                        audioBars.forEach((bar) => bar.classList.add("playing"));
+                    } catch (e) {
+                        console.warn(
+                            "Audio autoplay prevented; user gesture required.",
+                            e
+                        );
+                    }
+
+                    // Show content with staggered animation
+                    setTimeout(() => {
+                        mainContainer.classList.add("visible");
+                        setupIntersectionObserver();
+                    }, 500);
+
+                    // Start particles worker updates at ~60fps
+                    let lastTime = performance.now();
+                    const particleTick = () => {
+                        const now = performance.now();
+                        const dt = Math.min((now - lastTime) / 1000, 0.1);
+                        lastTime = now;
+
+                        // Read-only snapshot to avoid shared mutable state
+                        const snap = ParticleSystem.snapshot();
+
+                        if (particleWorker) {
+                            particleWorker.postMessage({
+                                type: "update",
+                                particles: snap.data,
+                                count: snap.count
+                            });
+                        }
+
+                        // Also render fallback particles to main canvas if needed
+                        if (!particleWorker) {
+                            const fctx = ctx;
+                            fctx.clearRect(
+                                0,
+                                0,
+                                window.innerWidth,
+                                window.innerHeight
+                            );
+                            for (let i = 0; i < snap.count; i++) {
+                                const idx = i * 6;
+                                const x = snap.data[idx];
+                                const y = snap.data[idx + 1];
+                                const life = snap.data[idx + 4];
+                                const type = snap.data[idx + 5];
+                                fctx.globalAlpha = life;
+                                if (type === 0) {
+                                    fctx.fillStyle = `hsl(${
+                                        270 + life * 60
+                                    }, 70%, 60%)`;
+                                } else if (type === 1) {
+                                    fctx.fillStyle = `hsl(${
+                                        Math.random() * 360
+                                    }, 80%, 60%)`;
+                                } else {
+                                    fctx.fillStyle = `rgba(200,200,200,${
+                                        life * 0.3
+                                    })`;
+                                }
+                                fctx.beginPath();
+                                fctx.arc(
+                                    x,
+                                    y,
+                                    type === 2 ? 5 : 2,
+                                    0,
+                                    Math.PI * 2
+                                );
+                                fctx.fill();
+                            }
+                            fctx.globalAlpha = 1;
+                        }
+
+                        requestAnimationFrame(particleTick);
+                    };
+                    requestAnimationFrame(particleTick);
+                });
+
+                // Continuous mouse & scroll handlers
+                document.addEventListener("mousemove", handleMouseMove, {
+                    passive: true
+                });
+                window.addEventListener("scroll", handleScroll, { passive: true });
+
+                // Satellite tilt effect with throttle
+                const memories = document.querySelectorAll(".memory.satellite");
+                memories.forEach((memory) => {
+                    memory.addEventListener(
+                        "mousemove",
+                        throttle((e) => {
+                            const rect = memory.getBoundingClientRect();
+                            const x = e.clientX - rect.left;
+                            const y = e.clientY - rect.top;
+                            const rx =
+                                ((y / rect.height) - 0.5) * -20; // rotateX
+                            const ry =
+                                ((x / rect.width) - 0.5) * 20; // rotateY
+                            memory.style.transform = `translateZ(30px) rotateX(${rx}deg) rotateY(${ry}deg) scale(1.02)`;
+                        }, 16)
+                    );
+
+                    memory.addEventListener("mouseleave", () => {
+                        memory.style.transform = "translateZ(0) rotateX(0) rotateY(0)";
+                    });
+
+                    // Click to spawn particles and ripple
+                    memory.addEventListener("click", (e) => {
+                        const rect = memory.getBoundingClientRect();
+                        const x = e.clientX;
+                        const y = e.clientY;
+                        ParticleSystem.spawn(x, y, 30, 1);
+                        ripple(x, y);
+                    });
+                });
+
+                // Ripple effect pure function
+                const ripple = (x, y) => {
+                    const ctx2 = ctx;
+                    let radius = 0;
+                    const maxRadius = 120;
+                    const animate = () => {
+                        radius += 3;
+                        const alpha = 1 - radius / maxRadius;
+                        if (radius > maxRadius) return;
+                        ctx2.save();
+                        ctx2.strokeStyle = `rgba(183, 148, 246, ${alpha})`;
+                        ctx2.lineWidth = 2;
+                        ctx2.beginPath();
+                        ctx2.arc(x, y, radius, 0, Math.PI * 2);
+                        ctx2.stroke();
+                        ctx2.restore();
+                        requestAnimationFrame(animate);
+                    };
+                    animate();
+                };
+
+                // Idle micro-interactions (ambient particles)
+                const ambientSpawn = throttle((e) => {
+                    ParticleSystem.spawn(
+                        (state.get("mouseX") || 0.5) * window.innerWidth,
+                        (state.get("mouseY") || 0.5) * window.innerHeight,
+                        6,
+                        0
+                    );
+                }, 120);
+                document.addEventListener("mousemove", ambientSpawn, {
+                    passive: true
+                });
+
+                // Optional: blow detection if user clicks "Enter & Listen" (auto-enable after entry)
+                entryOverlay.addEventListener(
+                    "click",
+                    async () => {
+                        try {
+                            blow = await setupBlowDetector();
+                            blow.node.port.onmessage = (ev) => {
+                                if (ev.data.type === "blowDetected") {
+                                    // Particle burst on blow + ripple
+                                    ParticleSystem.spawn(
+                                        window.innerWidth / 2,
+                                        window.innerHeight / 2,
+                                        150,
+                                        1
+                                    );
+                                    ripple(
+                                        window.innerWidth / 2,
+                                        window.innerHeight / 2
+                                    );
+                                }
+                            };
+                        } catch (err) {
+                            console.warn(
+                                "Blow detection not available:",
+                                err.message
+                            );
+                        }
+                    },
+                    { once: true }
+                );
+
+                // Spacebar for particle burst (performance-safe)
+                window.addEventListener(
+                    "keydown",
+                    (e) => {
+                        if (e.code === "Space") {
+                            e.preventDefault();
+                            ParticleSystem.spawn(
+                                (state.get("mouseX") || 0.5) * window.innerWidth,
+                                (state.get("mouseY") || 0.5) * window.innerHeight,
+                                120,
+                                1
+                            );
+                        }
+                    },
+                    { passive: false }
+                );
+
+                // Update ParticleSystem at 60fps
+                let plLast = performance.now();
+                const particleUpdateLoop = () => {
+                    const now = performance.now();
+                    const dt = Math.min((now - plLast) / 1000, 0.1);
+                    plLast = now;
+
+                    ParticleSystem.update(
+                        dt,
+                        (state.get("mouseX") || 0.5) * window.innerWidth,
+                        (state.get("mouseY") || 0.5) * window.innerHeight
+                    );
+
+                    requestAnimationFrame(particleUpdateLoop);
+                };
+                requestAnimationFrame(particleUpdateLoop);
+
+                // Preload images (functional composition: run-side-effects)
+                const preload = (src) =>
+                    new Promise((res, rej) => {
+                        const img = new Image();
+                        img.onload = res;
+                        img.onerror = rej;
+                        img.src = src;
+                    });
+
+                Promise.allSettled([
+                    preload("aisha/centre_image.png"),
+                    preload("aisha/Screenshot 2025-10-29 125901.png"),
+                    preload("aisha/Screenshot 2025-10-29 130100.png"),
+                    preload("aisha/Screenshot 2025-10-29 130346.png"),
+                    preload("aisha/Pisces - Tony Ann (Piano Cover).mp3")
+                ]).catch(() => {});
+
+                // Clean shutdown when page hidden
+                document.addEventListener("visibilitychange", () => {
+                    if (document.hidden) {
+                        // Pause animations logically by lowering star speed
+                        for (let i = 0; i < starData.length; i += 5) {
+                            starData[i + 3] *= 0.1;
+                        }
+                    } else {
+                        for (let i = 0; i < starData.length; i += 5) {
+                            starData[i + 3] *= 10;
+                        }
+                    }
+                });
+            };
+
+            return { init };
+        })();
+
+        // Initialize when DOM ready
+        if (document.readyState === "loading") {
+            document.addEventListener(
+                "DOMContentLoaded",
+                CosmicExperience.init
+            );
+        } else {
+            CosmicExperience.init();
+        }
+    </script>
+</body>
+</html>
